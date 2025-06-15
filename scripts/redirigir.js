@@ -1,11 +1,11 @@
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('btnSimplex').addEventListener('click', function() {
-        window.location.href = 'simplex.html';
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('btnSimplex').addEventListener('click', function() {
+            window.location.href = '../operativa/paginas/simplex.html';
+        });
     
-    document.getElementById('btnGrafico').addEventListener('click', function() {
-        window.location.href = 'grafico.html';
-    });
+        document.getElementById('btnGrafico').addEventListener('click', function() {
+            window.location.href = '../operativa/paginas/grafico.html';
+        });
     
     // Opcional: Redirección con retraso para efecto visual
     /*
@@ -16,4 +16,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
     */
-});
+    });
