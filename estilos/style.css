@@ -1,0 +1,60 @@
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f5f7fa;
+}
+
+.button-container {
+    display: flex;
+    gap: 20px;
+}
+
+.redirect-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.redirect-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+.redirect-button:active {
+    transform: translateY(1px);
+}
+
+.button-simplex {
+    background-color: #4a6bff;
+    color: white;
+}
+
+.button-simplex:hover {
+    background-color: #3a5bef;
+}
+
+.button-grafico {
+    background-color: #ff6b4a;
+    color: white;
+}
+
+.button-grafico:hover {
+    background-color: #ef5b3a;
+}
+
+.button-icon {
+    margin-right: 8px;
+    font-size: 18px;
+}
