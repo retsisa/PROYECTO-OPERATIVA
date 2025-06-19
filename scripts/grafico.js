@@ -1,120 +1,229 @@
-class GraficoPL {
+class LinearProgramSolver {
     constructor() {
-        this.graphContainer = document.getElementById('graph-container');
-        this.containerWidth = this.graphContainer.offsetWidth;
-        this.containerHeight = this.graphContainer.offsetHeight;
-        this.centerX = this.containerWidth / 2;
-        this.centerY = this.containerHeight / 2;
-        this.scale = 30;  
+        this.chart = null;
         this.constraintsCount = 0;
-        
         this.initEventListeners();
-        this.addConstraint(); // Agregar primera restricción por defecto
+        this.addConstraint(); // Restricción inicial
+        this.updateConstraintCount();
     }
-    
+
     initEventListeners() {
-        document.getElementById('add-constraint').addEventListener('click', () => this.addConstraint());
-        document.getElementById('remove-constraint').addEventListener('click', () => this.removeConstraint());
+        document.getElementById('add-constraint').addEventListener('click', () => {
+            this.addConstraint();
+            this.updateConstraintCount();
+        });
+        
+        document.getElementById('remove-constraint').addEventListener('click', () => {
+            this.removeConstraint();
+            this.updateConstraintCount();
+        });
+        
         document.getElementById('solve-btn').addEventListener('click', () => this.solveProblem());
+        document.getElementById('example-btn').addEventListener('click', () => this.loadIBMExample());
         document.getElementById('reset-btn').addEventListener('click', () => this.resetProblem());
     }
-    
+
+    updateConstraintCount() {
+        document.getElementById('constraint-count').textContent = `(${this.constraintsCount} actual)`;
+    }
+
     addConstraint() {
         this.constraintsCount++;
         const container = document.getElementById('constraints-container');
         
         const constraintDiv = document.createElement('div');
-        constraintDiv.className = 'form-group constraint';
+        constraintDiv.className = 'constraint';
         constraintDiv.dataset.id = this.constraintsCount;
-        
         constraintDiv.innerHTML = `
-            <label for="constraint-${this.constraintsCount}">Restricción ${this.constraintsCount}:</label>
-            <div class="constraint-input">
-                <input type="number" id="constraint-${this.constraintsCount}-x" placeholder="a">
-                <span>x +</span>
-                <input type="number" id="constraint-${this.constraintsCount}-y" placeholder="b">
-                <span>y</span>
-                <select id="constraint-${this.constraintsCount}-inequality">
-                    <option value="<=">≤</option>
-                    <option value=">=">≥</option>
-                    <option value="==">=</option>
-                </select>
-                <input type="number" id="constraint-${this.constraintsCount}-c" placeholder="c">
+            <div class="form-group">
+                <div class="constraint-input">
+                    <input type="number" id="constraint-${this.constraintsCount}-x" placeholder="a"> x +
+                    <input type="number" id="constraint-${this.constraintsCount}-y" placeholder="b"> y
+                    <select id="constraint-${this.constraintsCount}-inequality">
+                        <option value="<=">≤</option>
+                        <option value=">=">≥</option>
+                        <option value="==">=</option>
+                    </select>
+                    <input type="number" id="constraint-${this.constraintsCount}-c" placeholder="c">
+                    <button class="remove-btn" data-id="${this.constraintsCount}">×</button>
+                </div>
             </div>
         `;
-        
         container.appendChild(constraintDiv);
+        
+        constraintDiv.querySelector('.remove-btn').addEventListener('click', (e) => {
+            const id = parseInt(e.target.getAttribute('data-id'));
+            this.removeSpecificConstraint(id);
+        });
     }
-    
+
     removeConstraint() {
         if (this.constraintsCount > 1) {
             const container = document.getElementById('constraints-container');
             const lastConstraint = container.querySelector(`.constraint[data-id="${this.constraintsCount}"]`);
             container.removeChild(lastConstraint);
             this.constraintsCount--;
+        } else {
+            alert("Debe haber al menos una restricción");
         }
     }
-    
+
+    removeSpecificConstraint(id) {
+        if (this.constraintsCount > 1) {
+            const container = document.getElementById('constraints-container');
+            const constraint = container.querySelector(`.constraint[data-id="${id}"]`);
+            container.removeChild(constraint);
+            this.constraintsCount--;
+            this.renumberConstraints();
+        } else {
+            alert("Debe haber al menos una restricción");
+        }
+    }
+
+    renumberConstraints() {
+        const container = document.getElementById('constraints-container');
+        const constraints = container.querySelectorAll('.constraint');
+        
+        this.constraintsCount = constraints.length;
+        
+        constraints.forEach((constraint, index) => {
+            const newId = index + 1;
+            constraint.dataset.id = newId;
+            
+            const inputs = constraint.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.id = input.id.replace(/constraint-\d+/, `constraint-${newId}`);
+            });
+            
+            const btn = constraint.querySelector('.remove-btn');
+            if (btn) btn.setAttribute('data-id', newId);
+        });
+        
+        this.updateConstraintCount();
+    }
+
     resetProblem() {
         const container = document.getElementById('constraints-container');
         container.innerHTML = '';
         this.constraintsCount = 0;
         
-        document.getElementById('objective-type').value = 'max';
-        document.getElementById('obj-x').value = '';
-        document.getElementById('obj-y').value = '';
+        document.getElementById('problem-type').value = 'max';
+        document.getElementById('coef-x').value = '';
+        document.getElementById('coef-y').value = '';
         
-        document.getElementById('results').classList.add('hidden');
-        this.clearGraph();
+        document.getElementById('solution-steps').innerHTML = '';
+        if (this.chart) this.chart.destroy();
+        
         this.addConstraint();
+        this.updateConstraintCount();
     }
-    
-    clearGraph() {
-        const elementsToRemove = document.querySelectorAll('.constraint-line, .feasible-region, .vertex-point, .vertex-label, .tick, .tick-label');
-        elementsToRemove.forEach(el => el.remove());
+
+    loadIBMExample() {
+        this.resetProblem();
+        
+        document.getElementById('coef-x').value = '100';
+        document.getElementById('coef-y').value = '60';
+        
+        // Agregar restricciones del ejemplo IBM
+        this.addConstraintWithValues(2, 3, '<=', 350);
+        this.addConstraintWithValues(0.5, 0.25, '<=', 60);
+        this.addConstraintWithValues(1, 1, '>=', 90);
     }
-    
+
+    addConstraintWithValues(a, b, inequality, c) {
+        this.constraintsCount++;
+        const container = document.getElementById('constraints-container');
+        
+        const constraintDiv = document.createElement('div');
+        constraintDiv.className = 'constraint';
+        constraintDiv.dataset.id = this.constraintsCount;
+        constraintDiv.innerHTML = `
+            <div class="form-group">
+                <div class="constraint-input">
+                    <input type="number" value="${a}" id="constraint-${this.constraintsCount}-x"> x +
+                    <input type="number" value="${b}" id="constraint-${this.constraintsCount}-y"> y
+                    <select id="constraint-${this.constraintsCount}-inequality">
+                        <option value="<=" ${inequality === '<=' ? 'selected' : ''}>≤</option>
+                        <option value=">=" ${inequality === '>=' ? 'selected' : ''}>≥</option>
+                        <option value="==" ${inequality === '==' ? 'selected' : ''}>=</option>
+                    </select>
+                    <input type="number" value="${c}" id="constraint-${this.constraintsCount}-c">
+                    <button class="remove-btn" data-id="${this.constraintsCount}">×</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(constraintDiv);
+        
+        constraintDiv.querySelector('.remove-btn').addEventListener('click', (e) => {
+            const id = parseInt(e.target.getAttribute('data-id'));
+            this.removeSpecificConstraint(id);
+        });
+        
+        this.updateConstraintCount();
+    }
+
     solveProblem() {
-        const problemType = document.getElementById('objective-type').value;
-        const objX = parseFloat(document.getElementById('obj-x').value) || 0;
-        const objY = parseFloat(document.getElementById('obj-y').value) || 0;
+        const problemType = document.getElementById('problem-type').value;
+        const coefX = parseFloat(document.getElementById('coef-x').value) || 0;
+        const coefY = parseFloat(document.getElementById('coef-y').value) || 0;
         
         const constraints = [];
         for (let i = 1; i <= this.constraintsCount; i++) {
-            const x = parseFloat(document.getElementById(`constraint-${i}-x`).value) || 0;
-            const y = parseFloat(document.getElementById(`constraint-${i}-y`).value) || 0;
-            const inequality = document.getElementById(`constraint-${i}-inequality`).value;
-            const c = parseFloat(document.getElementById(`constraint-${i}-c`).value) || 0;
+            const xInput = document.getElementById(`constraint-${i}-x`);
+            const yInput = document.getElementById(`constraint-${i}-y`);
+            const inequalitySelect = document.getElementById(`constraint-${i}-inequality`);
+            const cInput = document.getElementById(`constraint-${i}-c`);
             
-            if (x !== 0 || y !== 0) {
-                constraints.push({ a: x, b: y, inequality, c });
+            // Verificar que los elementos existen antes de usarlos
+            if (xInput && yInput && inequalitySelect && cInput) {
+                const a = parseFloat(xInput.value) || 0;
+                const b = parseFloat(yInput.value) || 0;
+                const inequality = inequalitySelect.value;
+                const c = parseFloat(cInput.value) || 0;
+                
+                if (a !== 0 || b !== 0) {
+                    constraints.push({ a, b, inequality, c });
+                }
             }
         }
         
         if (constraints.length < 2) {
-            alert('Se necesitan al menos 2 restricciones válidas para resolver el problema.');
+            alert('Se necesitan al menos 2 restricciones válidas');
             return;
         }
         
-        const vertices = this.calculateVertices(constraints);
-        const evaluatedVertices = vertices.map(v => ({
-            x: v.x,
-            y: v.y,
-            z: objX * v.x + objY * v.y
+        const solution = this.calculateSolution(constraints, problemType, coefX, coefY);
+        this.displaySolution(solution, constraints, problemType, coefX, coefY);
+        this.drawGraph(solution, constraints, coefX, coefY);
+    }
+
+    calculateSolution(constraints, problemType, coefX, coefY) {
+        const vertices = this.findVertices(constraints);
+        const feasibleVertices = vertices.filter(point => 
+            this.isPointFeasible(point, constraints)
+        );
+        
+        const evaluatedVertices = feasibleVertices.map(point => ({
+            x: point.x,
+            y: point.y,
+            z: coefX * point.x + coefY * point.y
         }));
         
         let optimalVertex;
         if (problemType === 'max') {
-            optimalVertex = evaluatedVertices.reduce((max, v) => v.z > max.z ? v : max);
+            optimalVertex = evaluatedVertices.reduce((max, v) => v.z > max.z ? v : max, {z: -Infinity});
         } else {
-            optimalVertex = evaluatedVertices.reduce((min, v) => v.z < min.z ? v : min);
+            optimalVertex = evaluatedVertices.reduce((min, v) => v.z < min.z ? v : min, {z: Infinity});
         }
         
-        this.displayResults(problemType, optimalVertex, evaluatedVertices);
-        this.drawGraph(constraints, vertices, optimalVertex);
+        return {
+            vertices: evaluatedVertices,
+            optimalVertex,
+            feasibleVertices
+        };
     }
-    
-    calculateVertices(constraints) {
+
+    findVertices(constraints) {
         const vertices = [];
         
         // Intersecciones con ejes
@@ -139,264 +248,242 @@ class GraficoPL {
             }
         }
         
-        // Filtrar puntos factibles
-        const feasibleVertices = vertices.filter(point => {
-            return constraints.every(constraint => {
-                const leftSide = constraint.a * point.x + constraint.b * point.y;
-                
-                switch (constraint.inequality) {
-                    case '<=': return leftSide <= constraint.c + 0.0001; // Tolerancia numérica
-                    case '>=': return leftSide >= constraint.c - 0.0001;
-                    case '==': return Math.abs(leftSide - constraint.c) < 0.0001;
-                    default: return true;
-                }
-            });
-        });
-        
-        // Eliminar duplicados
-        const uniqueVertices = [];
-        const seen = new Set();
-        
-        feasibleVertices.forEach(point => {
-            const key = `${point.x.toFixed(4)},${point.y.toFixed(4)}`;
-            if (!seen.has(key)) {
-                seen.add(key);
-                uniqueVertices.push(point);
+        return vertices;
+    }
+
+    isPointFeasible(point, constraints) {
+        return constraints.every(constraint => {
+            const leftSide = constraint.a * point.x + constraint.b * point.y;
+            
+            switch (constraint.inequality) {
+                case '<=': return leftSide <= constraint.c + 0.0001;
+                case '>=': return leftSide >= constraint.c - 0.0001;
+                case '==': return Math.abs(leftSide - constraint.c) < 0.0001;
+                default: return true;
             }
         });
-        
-        return uniqueVertices;
     }
-    
-    displayResults(problemType, optimalVertex, vertices) {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.classList.remove('hidden');
+
+    displaySolution(solution, constraints, problemType, coefX, coefY) {
+        const stepsContainer = document.getElementById('solution-steps');
+        stepsContainer.innerHTML = '';
         
-        const solutionText = document.getElementById('solution-text');
-        solutionText.innerHTML = `
-            <p><strong>Problema de ${problemType === 'max' ? 'maximización' : 'minimización'}</strong></p>
-            <p>Solución óptima encontrada en:</p>
-            <p><strong>x = ${optimalVertex.x.toFixed(2)}, y = ${optimalVertex.y.toFixed(2)}</strong></p>
-            <p>Valor de la función objetivo: <strong>Z = ${optimalVertex.z.toFixed(2)}</strong></p>
+        // Paso 1: Modelo matemático
+        stepsContainer.innerHTML += `
+            <div class="solution-step">
+                <h3>Paso 1: Modelo Matemático</h3>
+                <p><strong>Función objetivo:</strong> ${problemType === 'max' ? 'Maximizar' : 'Minimizar'} Z = ${coefX}x + ${coefY}y</p>
+                <p><strong>Restricciones:</strong></p>
+                <ol>
+                    ${constraints.map((c, i) => `
+                        <li>${c.a}x + ${c.b}y ${c.inequality} ${c.c}</li>
+                    `).join('')}
+                </ol>
+            </div>
         `;
         
-        const verticesTable = document.getElementById('vertices-table').querySelector('tbody');
-        verticesTable.innerHTML = '';
+        // Paso 2: Puntos de las restricciones
+        stepsContainer.innerHTML += `
+            <div class="solution-step">
+                <h3>Paso 2: Puntos para Graficar</h3>
+                <table>
+                    <tr><th>Restricción</th><th>Punto 1 (x=0)</th><th>Punto 2 (y=0)</th></tr>
+                    ${constraints.map(c => `
+                        <tr>
+                            <td>${c.a}x + ${c.b}y ${c.inequality} ${c.c}</td>
+                            <td>(0, ${c.b !== 0 ? (c.c / c.b).toFixed(2) : '∞'})</td>
+                            <td>(${c.a !== 0 ? (c.c / c.a).toFixed(2) : '∞'}, 0)</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+        `;
         
-        vertices.forEach((vertex, index) => {
-            const row = document.createElement('tr');
-            if (vertex.x === optimalVertex.x && vertex.y === optimalVertex.y) {
-                row.style.backgroundColor = '#e8f8f5';
+        // Paso 3: Vértices
+        stepsContainer.innerHTML += `
+            <div class="solution-step">
+                <h3>Paso 3: Vértices Encontrados</h3>
+                <table>
+                    <tr><th>Vértice</th><th>Coordenadas</th><th>¿Factible?</th></tr>
+                    ${solution.vertices.map((v, i) => `
+                        <tr>
+                            <td>${String.fromCharCode(65 + i)}</td>
+                            <td>(${v.x.toFixed(2)}, ${v.y.toFixed(2)})</td>
+                            <td>${this.isPointFeasible(v, constraints) ? '✅ Sí' : '❌ No'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+        `;
+        
+        // Paso 4: Evaluación
+        stepsContainer.innerHTML += `
+            <div class="solution-step">
+                <h3>Paso 4: Evaluación de Vértices</h3>
+                <table>
+                    <tr><th>Vértice</th><th>x</th><th>y</th><th>Z = ${coefX}x + ${coefY}y</th></tr>
+                    ${solution.vertices.filter(v => this.isPointFeasible(v, constraints)).map((v, i) => `
+                        <tr ${v.x === solution.optimalVertex.x && v.y === solution.optimalVertex.y ? 'class="optimal-vertex"' : ''}>
+                            <td>${String.fromCharCode(65 + i)}</td>
+                            <td>${v.x.toFixed(2)}</td>
+                            <td>${v.y.toFixed(2)}</td>
+                            <td>${v.z.toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            </div>
+        `;
+        
+        // Paso 5: Solución óptima
+        stepsContainer.innerHTML += `
+            <div class="solution-step optimal-solution">
+                <h3>Paso 5: Solución Óptima</h3>
+                <p><strong>Producir:</strong> ${solution.optimalVertex.x.toFixed(2)} unidades de x y ${solution.optimalVertex.y.toFixed(2)} unidades de y</p>
+                <p><strong>Valor óptimo:</strong> Z = ${solution.optimalVertex.z.toFixed(2)}</p>
+            </div>
+        `;
+    }
+
+    drawGraph(solution, constraints, coefX, coefY) {
+        const ctx = document.getElementById('graphCanvas').getContext('2d');
+        
+        if (this.chart) {
+            this.chart.destroy();
+        }
+    
+        // Ordenar vértices para crear el polígono correctamente
+        const orderedVertices = this.orderVerticesClockwise(solution.feasibleVertices);
+        
+        // Crear datasets para Chart.js
+        const datasets = [
+            // Restricciones (líneas)
+            ...constraints.map((c, i) => ({
+                label: `${c.a}x + ${c.b}y ${c.inequality} ${c.c}`,
+                data: this.getConstraintPoints(c),
+                borderColor: this.getConstraintColor(i),
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                type: 'line'
+            })),
+            
+            // Región factible (área sombreada)
+            {
+                label: 'Región Factible',
+                data: orderedVertices,
+                backgroundColor: 'rgba(61, 158, 158, 0.4)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                type: 'line'
+            },
+            
+            // Vértices (puntos)
+            {
+                label: 'Vértices',
+                data: solution.feasibleVertices,
+                backgroundColor: solution.feasibleVertices.map(v => 
+                    (v.x === solution.optimalVertex.x && v.y === solution.optimalVertex.y) 
+                        ? 'rgba(255, 99, 132, 1)' 
+                        : 'rgba(54, 162, 235, 1)'
+                ),
+                pointRadius: 6,
+                borderWidth: 2,
+                showLine: false
+            },
+            
+            // Solución óptima (punto destacado)
+            {
+                label: 'Solución Óptima',
+                data: [solution.optimalVertex],
+                backgroundColor: 'rgba(255, 99, 132, 1)',
+                pointRadius: 8,
+                borderWidth: 2,
+                showLine: false
             }
-            
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${vertex.x.toFixed(2)}</td>
-                <td>${vertex.y.toFixed(2)}</td>
-                <td>${vertex.z.toFixed(2)}</td>
-            `;
-            
-            verticesTable.appendChild(row);
-        });
-    }
-    
-    drawGraph(constraints, vertices, optimalVertex) {
-        this.clearGraph();
-        this.drawAxes();
+        ];
         
-        constraints.forEach(constraint => {
-            this.drawConstraint(constraint);
-        });
-        
-        this.drawFeasibleRegion(vertices);
-        
-        vertices.forEach(vertex => {
-            this.drawVertex(vertex, vertex.x === optimalVertex.x && vertex.y === optimalVertex.y);
-        });
-    }
-    
-    drawAxes() {
-        const xRange = Math.floor(this.containerWidth / (2 * this.scale));
-        const yRange = Math.floor(this.containerHeight / (2 * this.scale));
-        
-        // Eje X
-        for (let x = -xRange; x <= xRange; x++) {
-            if (x !== 0) {
-                const xPos = this.centerX + x * this.scale;
-                
-                const tick = document.createElement('div');
-                tick.className = 'tick x-tick';
-                tick.style.left = `${xPos}px`;
-                this.graphContainer.appendChild(tick);
-                
-                if (x % 2 === 0) {
-                    const label = document.createElement('div');
-                    label.className = 'tick-label x-tick-label';
-                    label.textContent = x;
-                    label.style.left = `${xPos}px`;
-                    this.graphContainer.appendChild(label);
+        this.chart = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Variable x' },
+                        min: 0,
+                        suggestedMax: Math.max(...solution.vertices.map(v => v.x)) * 1.2
+                    },
+                    y: {
+                        title: { display: true, text: 'Variable y' },
+                        min: 0,
+                        suggestedMax: Math.max(...solution.vertices.map(v => v.y)) * 1.2
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: (${context.parsed.x}, ${context.parsed.y})`;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            filter: (item) => !item.text.includes('Solución Óptima') // Ocultar leyenda redundante
+                        }
+                    }
                 }
             }
-        }
-        
-        // Eje Y
-        for (let y = -yRange; y <= yRange; y++) {
-            if (y !== 0) {
-                const yPos = this.centerY - y * this.scale;
-                
-                const tick = document.createElement('div');
-                tick.className = 'tick y-tick';
-                tick.style.top = `${yPos}px`;
-                this.graphContainer.appendChild(tick);
-                
-                if (y % 2 === 0) {
-                    const label = document.createElement('div');
-                    label.className = 'tick-label y-tick-label';
-                    label.textContent = y;
-                    label.style.top = `${yPos}px`;
-                    this.graphContainer.appendChild(label);
-                }
-            }
-        }
-        
-        // Etiquetas de ejes
-        const xLabel = document.createElement('div');
-        xLabel.className = 'axis-label x-axis-label';
-        xLabel.textContent = 'x';
-        xLabel.style.left = `${this.containerWidth - 20}px`;
-        xLabel.style.bottom = `${this.centerY - 20}px`;
-        this.graphContainer.appendChild(xLabel);
-        
-        const yLabel = document.createElement('div');
-        yLabel.className = 'axis-label y-axis-label';
-        yLabel.textContent = 'y';
-        yLabel.style.left = `${this.centerX + 10}px`;
-        yLabel.style.top = '10px';
-        this.graphContainer.appendChild(yLabel);
+        });
     }
     
-    drawConstraint(constraint) {
-        let point1, point2;
+    // Nueva función para ordenar vértices en sentido horario
+    orderVerticesClockwise(vertices) {
+        if (vertices.length < 3) return vertices;
         
-        if (constraint.b !== 0) {
-            // Puntos para línea no vertical
-            const x1 = -10;
-            const y1 = (constraint.c - constraint.a * x1) / constraint.b;
-            
-            const x2 = 10;
-            const y2 = (constraint.c - constraint.a * x2) / constraint.b;
-            
-            point1 = { x: x1, y: y1 };
-            point2 = { x: x2, y: y2 };
-        } else {
-            // Línea vertical
-            const x = constraint.c / constraint.a;
-            point1 = { x: x, y: -10 };
-            point2 = { x: x, y: 10 };
-        }
-        
-        // Convertir a coordenadas de píxeles
-        const x1 = this.centerX + point1.x * this.scale;
-        const y1 = this.centerY - point1.y * this.scale;
-        const x2 = this.centerX + point2.x * this.scale;
-        const y2 = this.centerY - point2.y * this.scale;
-        
-        // Calcular ángulo y longitud
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        
-        // Crear línea
-        const line = document.createElement('div');
-        line.className = 'constraint-line';
-        line.style.width = `${length}px`;
-        line.style.left = `${x1}px`;
-        line.style.top = `${y1}px`;
-        line.style.transform = `rotate(${angle}deg)`;
-        
-        // Color según tipo de desigualdad
-        if (constraint.inequality === '<=') {
-            line.style.backgroundColor = '#3498db';
-        } else if (constraint.inequality === '>=') {
-            line.style.backgroundColor = '#e74c3c';
-        } else {
-            line.style.backgroundColor = '#2ecc71';
-        }
-        
-        this.graphContainer.appendChild(line);
-        
-        // Etiqueta de restricción
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
-        
-        const label = document.createElement('div');
-        label.className = 'constraint-label';
-        label.textContent = `${constraint.a}x + ${constraint.b}y ${constraint.inequality} ${constraint.c}`;
-        label.style.left = `${midX + 10}px`;
-        label.style.top = `${midY - 10}px`;
-        this.graphContainer.appendChild(label);
-    }
-    
-    drawFeasibleRegion(vertices) {
-        if (vertices.length < 3) return;
-        
-        // Ordenar vértices en sentido horario
-        const center = {
+        // Calcular centroide
+        const centroid = {
             x: vertices.reduce((sum, v) => sum + v.x, 0) / vertices.length,
             y: vertices.reduce((sum, v) => sum + v.y, 0) / vertices.length
         };
         
-        vertices.sort((a, b) => {
-            return Math.atan2(a.y - center.y, a.x - center.x) - Math.atan2(b.y - center.y, b.x - center.x);
+        // Ordenar por ángulo polar
+        return [...vertices].sort((a, b) => {
+            const angleA = Math.atan2(a.y - centroid.y, a.x - centroid.x);
+            const angleB = Math.atan2(b.y - centroid.y, b.x - centroid.x);
+            return angleA - angleB;
         });
-        
-        // Crear cadena de puntos para SVG
-        const points = vertices.map(v => {
-            const x = this.centerX + v.x * this.scale;
-            const y = this.centerY - v.y * this.scale;
-            return `${x},${y}`;
-        }).join(' ');
-        
-        // Crear polígono SVG
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '100%');
-        svg.setAttribute('height', '100%');
-        svg.style.position = 'absolute';
-        svg.style.top = '0';
-        svg.style.left = '0';
-        svg.style.zIndex = '1';
-        
-        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        polygon.setAttribute('points', points);
-        polygon.setAttribute('fill', 'rgba(52, 152, 219, 0.3)');
-        polygon.setAttribute('stroke', '#3498db');
-        polygon.setAttribute('stroke-width', '1');
-        
-        svg.appendChild(polygon);
-        this.graphContainer.appendChild(svg);
     }
-    
-    drawVertex(vertex, isOptimal) {
-        const x = this.centerX + vertex.x * this.scale;
-        const y = this.centerY - vertex.y * this.scale;
-        
-        const point = document.createElement('div');
-        point.className = 'vertex-point' + (isOptimal ? ' optimal-point' : '');
-        point.style.left = `${x}px`;
-        point.style.top = `${y}px`;
-        this.graphContainer.appendChild(point);
-        
-        const label = document.createElement('div');
-        label.className = 'vertex-label';
-        label.textContent = `(${vertex.x.toFixed(1)}, ${vertex.y.toFixed(1)})`;
-        label.style.left = `${x + 15}px`;
-        label.style.top = `${y - 10}px`;
-        this.graphContainer.appendChild(label);
+
+    getConstraintPoints(constraint) {
+        const points = [];
+        if (constraint.b !== 0) points.push({ x: 0, y: constraint.c / constraint.b });
+        if (constraint.a !== 0) points.push({ x: constraint.c / constraint.a, y: 0 });
+        if (constraint.a !== 0 && constraint.b !== 0) {
+            points.push({ x: constraint.c / constraint.a * 1.5, y: 0 });
+        }
+        return points;
+    }
+
+    getConstraintColor(index) {
+        const colors = [
+            'rgb(255, 99, 132)',
+            'rgb(54, 162, 235)',
+            'rgb(255, 206, 86)',
+            'rgb(75, 192, 192)',
+            'rgb(153, 102, 255)',
+            'rgb(255, 159, 64)'
+        ];
+        return colors[index % colors.length];
     }
 }
 
-// Inicializar la aplicación cuando el DOM esté listo
+// Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
-    new GraficoPL();
+    window.solver = new LinearProgramSolver();
 });

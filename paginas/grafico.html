@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método Gráfico - Programación Lineal</title>
+    <title>Método Gráfico</title>
     <link rel="stylesheet" href="../estilos/grafico.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Método Gráfico</h1>
-            <a href="../index.html" class="back-button">← Volver</a>
-        </header>
-
+        <h1>Método Gráfico</h1>
+        
+        <!-- Sección de entrada de datos -->
         <div class="input-section">
             <h2>Ingrese los datos del problema</h2>
             
             <div class="form-group">
-                <label for="objective-type">Tipo de problema:</label>
-                <select id="objective-type">
+                <label for="problem-type">Tipo de problema:</label>
+                <select id="problem-type">
                     <option value="max">Maximizar</option>
                     <option value="min">Minimizar</option>
                 </select>
@@ -27,51 +26,31 @@
             <div class="form-group">
                 <label>Función objetivo:</label>
                 <div class="objective-input">
-                    <span>Z =</span>
-                    <input type="number" id="obj-x" placeholder="x">
-                    <span>x +</span>
-                    <input type="number" id="obj-y" placeholder="y">
-                    <span>y</span>
+                    Z = <input type="number" id="coef-x" placeholder="x"> x + 
+                    <input type="number" id="coef-y" placeholder="y"> y
                 </div>
             </div>
             
-            <h3>Restricciones</h3>
+            <h3>Restricciones <span id="constraint-count">(1 actual)</span></h3>
             <div id="constraints-container"></div>
             
             <div class="buttons-container">
-                <button id="add-constraint" class="btn primary">+ Restricción</button>
-                <button id="remove-constraint" class="btn secondary">- Restricción</button>
+                <button id="add-constraint" class="btn primary">+ Agregar Restricción</button>
+                <button id="remove-constraint" class="btn secondary">- Quitar Última</button>
                 <button id="solve-btn" class="btn success">Resolver</button>
+                <button id="example-btn" class="btn info">Ejemplo IBM</button>
                 <button id="reset-btn" class="btn danger">Reiniciar</button>
             </div>
         </div>
 
+        <!-- Sección de resultados -->
         <div class="results-section">
-            <div id="graph-container">
-                <div class="axis x-axis"></div>
-                <div class="axis y-axis"></div>
-                <!-- Aquí se generará el gráfico -->
+            <h2>Solución Gráfica</h2>
+            <div class="chart-container">
+                <canvas id="graphCanvas"></canvas>
             </div>
             
-            <div id="results" class="hidden">
-                <h2>Solución Óptima</h2>
-                <div id="solution-text" class="solution-box"></div>
-                
-                <h3>Puntos de Vértice</h3>
-                <div class="table-container">
-                    <table id="vertices-table">
-                        <thead>
-                            <tr>
-                                <th>Punto</th>
-                                <th>Coordenada x</th>
-                                <th>Coordenada y</th>
-                                <th>Valor Z</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="solution-steps"></div>
         </div>
     </div>
 
