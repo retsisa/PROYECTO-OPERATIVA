@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método de Dos Fases</title>
+    <link rel="stylesheet" href="../estilos/dos_faces.css">
+</head>
+<body>
+    <!--div class="container">
+        <h1>Método de Dos Fases - Optimización de Cursos UPEA</h1>
+        
+        <div class="problem-statement">
+            <h2>Problema:</h2>
+            <p>Maximizar Z = 150xp + 100xh </p>
+            <p>Sujeto a:</p>
+            <ul>
+                <li>xp + xh <= 30 (Capacidad total)</li>
+                <li>xp >= 10 (Mínimo cursos prácticos)</li>
+                <li>xh >= 10 (Mínimo cursos humanísticos)</li>
+            </ul>
+        </div>
+        
+        <button id="solve-btn">Resolver con Dos Fases</button>
+        <button id="reset-btn">Reiniciar</button>
+        
+        <div id="solution-steps"></div>
+    </div-->
+    <div class="container">
+        <header>
+            <h1>Método de Dos Fases</h1>
+            <p class="subtitle">Solución de problemas de Programación Lineal</p>
+        </header>
+        
+        <div class="card">
+            <h2 class="card-title">Configuración del Problema</h2>
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="variables">Número de Variables:</label>
+                    <input type="number" id="variables" min="1" value="2">
+                </div>
+                
+                <div class="input-group">
+                    <label for="restricciones">Número de Restricciones:</label>
+                    <input type="number" id="restricciones" min="1" value="2">
+                </div>
+                
+                <div class="input-group">
+                    <label for="tipo-optimizacion">Tipo de Optimización:</label>
+                    <select id="tipo-optimizacion">
+                        <option value="min">Minimizar</option>
+                        <option value="max">Maximizar</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="generar-btn">Generar Tabla</button>
+        </div>
+        
+        <div class="card" id="problema-card" style="display: none;">
+            <h2 class="card-title">Ingresar Datos del Problema</h2>
+            
+            <div id="funcion-objetivo-container">
+                <h3>Función Objetivo</h3>
+                <!-- Se generan los inputs para la función objetivo -->
+            </div>
+            
+            <div id="restricciones-container">
+                <h3>Restricciones</h3>
+                <!-- Se generan los inputs para las restricciones -->
+            </div>
+            
+            <button id="resolver-btn">Resolver con Método de Dos Fases</button>
+        </div>
+        
+        <div class="card" id="resultados-card" style="display: none;">
+            <h2 class="card-title">Solución por Dos Fases</h2>
+            <div id="pasos-container">
+                <!-- Aquí se mostrarán los pasos del algoritmo -->
+            </div>
+        </div>
+        
+        <footer>
+            <p>Proyecto Final - Métodos Cuantitativos para la Toma de Decisiones</p>
+            <p>Método de Dos Fases para Programación Lineal</p>
+        </footer>
+    </div>
+    <script src="../scripts/dos_faces.js"></script>
+</body>
+</html>
