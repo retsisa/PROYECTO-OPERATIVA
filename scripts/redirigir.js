@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btnSimplex').addEventListener('click', function() {
-            window.location.href = 'PROYECTO-OPERATIVA/paginas/simplex.html';
+            window.location.href = 'paginas/simplex.html';
         });
     
         document.getElementById('btnGrafico').addEventListener('click', function() {
-            window.location.href = 'grafico.html';
+            window.location.href = 'paginas/grafico.html';
         });
 
         document.getElementById('btndosfases').addEventListener('click', function() {
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         document.getElementById('btnVogel').addEventListener('click', function() {
-            window.location.href = 'vogel.html';
+            window.location.href = 'paginas/vogel.html';
         });
     
     // Opcional: Redirección con retraso para efecto visual
