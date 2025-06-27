@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bienvenido</title>
     <link rel="stylesheet" href="estilos/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   </head>
   <body>
-    <div class="button-container">
+    <!--div class="button-container">
       <button class="redirect-button button-simplex" id="btnSimplex">
         <span class="button-icon">📊</span>
         Método Simplex
@@ -26,7 +27,41 @@
         <span class="button-icon">📈</span>
         Método Dos fases
       </button>
-    </div>
+    </div-->
+    <div class="header">
+      <h1>Proyecto Final Investigacion Operativa</h1>
+      <p>Selecciona un método para resolver problemas de programación lineal</p>
+  </div>
+  
+  <div class="button-container">
+      <button class="redirect-button button-simplex" id="btnSimplex">
+          <span class="button-icon"><i class="fas fa-project-diagram"></i></span>
+          Método Simplex
+          <span class="button-description">Para problemas generales de PL</span>
+      </button>
+
+      <button class="redirect-button button-grafico" id="btnGrafico">
+          <span class="button-icon"><i class="fas fa-chart-line"></i></span>
+          Método Gráfico
+          <span class="button-description">Para problemas con 2 variables</span>
+      </button>
+
+      <button class="redirect-button button-vogel" id="btnVogel">
+          <span class="button-icon"><i class="fas fa-truck"></i></span>
+          Método Vogel
+          <span class="button-description">Para problemas de transporte</span>
+      </button>
+      
+      <button class="redirect-button button-dosfases" id="btndosfases">
+          <span class="button-icon"><i class="fas fa-layer-group"></i></span>
+          Método Dos Fases
+          <span class="button-description">Para problemas con artificiales</span>
+      </button>
+  </div>
+  
+  <footer>
+      <p>© 2025 Proyecto Investigacion Operativa | Desarrollado por </p>
+  </footer>
     <script src="scripts/redirigir.js"></script>
   </body>
 </html>

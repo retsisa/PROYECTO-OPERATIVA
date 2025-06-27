@@ -452,11 +452,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     window.solver = new TwoPhaseSolver();
 });*/
-document.addEventListener('DOMContentLoaded', function() {
+/*document.addEventListener('DOMContentLoaded', function() {
     const variablesInput = document.getElementById('variables');
     const restriccionesInput = document.getElementById('restricciones');
     const tipoOptimizacionSelect = document.getElementById('tipo-optimizacion');
     const generarBtn = document.getElementById('generar-btn');
+    const ejemploBtn = document.getElementById('ejemplo-btn');
     const resolverBtn = document.getElementById('resolver-btn');
     const problemaCard = document.getElementById('problema-card');
     const resultadosCard = document.getElementById('resultados-card');
@@ -484,6 +485,43 @@ document.addEventListener('DOMContentLoaded', function() {
         resultadosCard.style.display = 'none';
     });
     
+    // Cargar ejemplo predefinido
+    ejemploBtn.addEventListener('click', function() {
+        variablesInput.value = 2;
+        restriccionesInput.value = 3;
+        tipoOptimizacionSelect.value = 'min';
+        
+        variables = 2;
+        restricciones = 3;
+        tipoOptimizacion = 'min';
+        
+        generarInputsProblema();
+        problemaCard.style.display = 'block';
+        resultadosCard.style.display = 'none';
+        
+        // Función objetivo: Minimizar Z = 4x1 + x2
+        document.querySelector('.coef-fo[data-variable="0"]').value = 4;
+        document.querySelector('.coef-fo[data-variable="1"]').value = 1;
+        
+        // Restricción 1: 3x1 + x2 = 3
+        document.querySelector('.coef-restriccion[data-restriccion="0"][data-variable="0"]').value = 3;
+        document.querySelector('.coef-restriccion[data-restriccion="0"][data-variable="1"]').value = 1;
+        document.querySelector('.rhs[data-restriccion="0"]').value = 3;
+        document.querySelector('.tipo-restriccion[data-restriccion="0"]').value = '=';
+        
+        // Restricción 2: 4x1 + 3x2 ≥ 6
+        document.querySelector('.coef-restriccion[data-restriccion="1"][data-variable="0"]').value = 4;
+        document.querySelector('.coef-restriccion[data-restriccion="1"][data-variable="1"]').value = 3;
+        document.querySelector('.rhs[data-restriccion="1"]').value = 6;
+        document.querySelector('.tipo-restriccion[data-restriccion="1"]').value = '≥';
+        
+        // Restricción 3: x1 + 2x2 ≤ 4
+        document.querySelector('.coef-restriccion[data-restriccion="2"][data-variable="0"]').value = 1;
+        document.querySelector('.coef-restriccion[data-restriccion="2"][data-variable="1"]').value = 2;
+        document.querySelector('.rhs[data-restriccion="2"]').value = 4;
+        document.querySelector('.tipo-restriccion[data-restriccion="2"]').value = '≤';
+    });
+    
     // Función para generar los inputs del problema
     function generarInputsProblema() {
         // Limpiar contenedores
@@ -505,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const input = document.createElement('input');
             input.type = 'number';
             input.step = 'any';
-            input.value = Math.floor(Math.random() * 10) - 2; // Entre -2 y 7
+            input.value = Math.floor(Math.random() * 10) - 2;
             input.dataset.variable = i;
             input.classList.add('coef-fo');
             
@@ -540,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.step = 'any';
-                input.value = Math.floor(Math.random() * 5) + 1; // Entre 1 y 5
+                input.value = Math.floor(Math.random() * 5) + 1;
                 input.dataset.variable = i;
                 input.dataset.restriccion = r;
                 input.classList.add('coef-restriccion');
@@ -560,7 +598,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const rhsInput = document.createElement('input');
             rhsInput.type = 'number';
             rhsInput.step = 'any';
-            rhsInput.value = Math.floor(Math.random() * 20) + 10; // Entre 10 y 30
+            rhsInput.value = Math.floor(Math.random() * 20) + 10;
             rhsInput.dataset.restriccion = r;
             rhsInput.classList.add('rhs');
             
@@ -587,7 +625,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 tipoSelect.appendChild(option);
             });
             
-            // Establecer aleatoriamente un tipo
             tipoSelect.selectedIndex = Math.floor(Math.random() * 3);
             
             tipoGrupo.appendChild(tipoLabel);
@@ -601,34 +638,41 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Resolver el problema con el método de dos fases
     resolverBtn.addEventListener('click', function() {
-        if (!leerDatosProblema()) return;
+        const datosProblema = leerDatosProblema();
+        if (!datosProblema) return;
         
-        // Limpiar resultados anteriores
         pasosContainer.innerHTML = '';
         
-        // Resolver con método de dos fases
-        const { solucion, pasos } = resolverDosFases();
-        
-        // Mostrar resultados
-        mostrarResultados(solucion, pasos);
-        
-        resultadosCard.style.display = 'block';
+        try {
+            const { solucion, pasos } = resolverDosFases(datosProblema);
+            mostrarResultados(solucion, pasos);
+            resultadosCard.style.display = 'block';
+        } catch (error) {
+            alert(`Error al resolver: ${error.message}`);
+            console.error(error);
+        }
     });
     
     // Leer datos del problema
     function leerDatosProblema() {
         const coefFO = [];
-        const restricciones = [];
+        const restriccionesData = [];
         
         // Leer función objetivo
         const foInputs = document.querySelectorAll('.coef-fo');
         for (let i = 0; i < variables; i++) {
             const input = document.querySelector(`.coef-fo[data-variable="${i}"]`);
-            coefFO.push(parseFloat(input.value));
+            const value = parseFloat(input.value);
+            if (isNaN(value)) {
+                alert(`Valor inválido en coeficiente x${i+1} de la función objetivo`);
+                return null;
+            }
+            coefFO.push(value);
         }
         
         // Leer restricciones
-        for (let r = 0; r < restriccionesInput.value; r++) {
+        const restriccionDivs = document.querySelectorAll('.restriccion');
+        for (let r = 0; r < restriccionDivs.length; r++) {
             const restriccion = {
                 coef: [],
                 rhs: 0,
@@ -638,37 +682,39 @@ document.addEventListener('DOMContentLoaded', function() {
             // Coeficientes
             for (let i = 0; i < variables; i++) {
                 const input = document.querySelector(`.coef-restriccion[data-restriccion="${r}"][data-variable="${i}"]`);
-                restriccion.coef.push(parseFloat(input.value));
+                const value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    alert(`Valor inválido en coeficiente x${i+1} de la restricción ${r+1}`);
+                    return null;
+                }
+                restriccion.coef.push(value);
             }
             
             // Lado derecho
             const rhsInput = document.querySelector(`.rhs[data-restriccion="${r}"]`);
             restriccion.rhs = parseFloat(rhsInput.value);
+            if (isNaN(restriccion.rhs)) {
+                alert(`Valor inválido en lado derecho de la restricción ${r+1}`);
+                return null;
+            }
             
             // Tipo
             const tipoSelect = document.querySelector(`.tipo-restriccion[data-restriccion="${r}"]`);
             restriccion.tipo = tipoSelect.value;
             
-            restricciones.push(restriccion);
+            restriccionesData.push(restriccion);
         }
         
-        // Validar datos
-        if (coefFO.some(isNaN)) {
-            alert('Por favor ingrese valores válidos en la función objetivo');
-            return false;
-        }
-        
-        if (restricciones.some(r => r.coef.some(isNaN) || isNaN(r.rhs))) {
-            alert('Por favor ingrese valores válidos en todas las restricciones');
-            return false;
-        }
-        
-        return { coefFO, restricciones, tipoOptimizacion };
+        return { 
+            coefFO, 
+            restricciones: restriccionesData, 
+            tipoOptimizacion: tipoOptimizacionSelect.value 
+        };
     }
     
     // Implementación del método de dos fases
-    function resolverDosFases() {
-        const { coefFO, restricciones, tipoOptimizacion } = leerDatosProblema();
+    function resolverDosFases(datosProblema) {
+        const { coefFO, restricciones, tipoOptimizacion } = datosProblema;
         const pasos = [];
         
         // Paso 1: Convertir a forma estándar
@@ -686,60 +732,66 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Iteraciones de la Fase 1
         let iteracion = 1;
+        let currentTableau = JSON.parse(JSON.stringify(tableau));
+        
         while (true) {
-            const { filaPivote, colPivote, puedeMejorar } = encontrarPivote(tableau, true);
+            const { filaPivote, colPivote, puedeMejorar } = encontrarPivote(currentTableau, true);
             
             if (!puedeMejorar) break;
             
-            tableau = pivotear(tableau, filaPivote, colPivote);
+            currentTableau = pivotear(currentTableau, filaPivote, colPivote);
             
             pasos.push(crearPaso(`Fase 1: Iteración ${iteracion}`, 
                 `Pivote en fila ${filaPivote+1}, columna ${colPivote+1}.`,
-                tableau
+                currentTableau,
+                null,
+                {filaPivote, colPivote}
             ));
             
             iteracion++;
         }
         
         // Verificar factibilidad
-        const valorW = tableau[0][tableau[0].length - 1];
+        const valorW = currentTableau[0][currentTableau[0].length - 1];
         if (Math.abs(valorW) > 1e-8) {
             pasos.push(crearPaso('Fase 1: Resultado', 
                 `El problema no tiene solución factible (W = ${valorW.toFixed(4)} ≠ 0).`,
-                tableau
+                currentTableau
             ));
             return { solucion: null, pasos };
         }
         
         // Paso 3: Fase 2 - Eliminar variables artificiales y resolver el problema original
-        tableau = eliminarVariablesArtificiales(tableau, variablesArtificiales);
+        currentTableau = eliminarVariablesArtificiales(currentTableau, variablesArtificiales);
         pasos.push(crearPaso('Fase 2: Eliminación de Variables Artificiales', 
             'Se eliminaron las variables artificiales y se restaura la función objetivo original.',
-            tableau
+            currentTableau
         ));
         
         // Iteraciones de la Fase 2
         iteracion = 1;
         while (true) {
-            const { filaPivote, colPivote, puedeMejorar } = encontrarPivote(tableau, false);
+            const { filaPivote, colPivote, puedeMejorar } = encontrarPivote(currentTableau, false);
             
             if (!puedeMejorar) break;
             
-            tableau = pivotear(tableau, filaPivote, colPivote);
+            currentTableau = pivotear(currentTableau, filaPivote, colPivote);
             
             pasos.push(crearPaso(`Fase 2: Iteración ${iteracion}`, 
                 `Pivote en fila ${filaPivote+1}, columna ${colPivote+1}.`,
-                tableau
+                currentTableau,
+                null,
+                {filaPivote, colPivote}
             ));
             
             iteracion++;
         }
         
         // Obtener solución final
-        const solucion = extraerSolucion(tableau, variables);
+        const solucion = extraerSolucion(currentTableau, variables);
         pasos.push(crearPaso('Solución Final', 
             `Valor óptimo: ${solucion.valor.toFixed(4)}.`,
-            tableau,
+            currentTableau,
             solucion
         ));
         
@@ -748,59 +800,210 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Función para convertir a forma estándar
     function convertirAFormaEstandar(coefFO, restricciones, tipoOptimizacion) {
-        // Implementación de la conversión a forma estándar
-        // (Agregar variables de holgura, exceso y artificiales)
-        // Retorna el tableau inicial y las columnas de variables artificiales
+        const numVariables = coefFO.length;
+        const numRestricciones = restricciones.length;
         
-        // Esta es una implementación simplificada
+        // Contadores para variables adicionales
+        let numHolgura = 0;
+        let numExceso = 0;
+        let numArtificiales = 0;
+        
+        // Identificar tipos de variables necesarias
+        restricciones.forEach(restriccion => {
+            if (restriccion.tipo === '≤') numHolgura++;
+            else if (restriccion.tipo === '≥') {
+                numExceso++;
+                numArtificiales++;
+            }
+            else if (restriccion.tipo === '=') numArtificiales++;
+        });
+        
+        // Inicializar tableau
+        const totalColumnas = numVariables + numHolgura + numExceso + numArtificiales + 1; // +1 para RHS
         const tableau = [];
+        
+        // Fila 0: Función objetivo original (para Fase 2)
+        const filaZ = new Array(totalColumnas).fill(0);
+        for (let i = 0; i < numVariables; i++) {
+            filaZ[i] = tipoOptimizacion === 'min' ? coefFO[i] : -coefFO[i];
+        }
+        filaZ[totalColumnas - 1] = 0; // RHS
+        tableau.push(filaZ);
+        
+        // Fila 1: Función objetivo de la Fase 1 (W)
+        const filaW = new Array(totalColumnas).fill(0);
+        
+        // Variables para mapear posiciones
+        let colHolgura = numVariables;
+        let colExceso = numVariables + numHolgura;
+        let colArtificial = numVariables + numHolgura + numExceso;
         const variablesArtificiales = [];
         
-        // Se construye el tableau inicial aquí
-        // ...
+        // Agregar restricciones al tableau
+        restricciones.forEach((restriccion, i) => {
+            const fila = new Array(totalColumnas).fill(0);
+            
+            // Coeficientes de variables originales
+            for (let j = 0; j < numVariables; j++) {
+                fila[j] = restriccion.coef[j];
+            }
+            
+            // Variables de holgura/exceso/artificiales
+            if (restriccion.tipo === '≤') {
+                fila[colHolgura] = 1;
+                colHolgura++;
+            } else if (restriccion.tipo === '≥') {
+                fila[colExceso] = -1;
+                fila[colArtificial] = 1;
+                variablesArtificiales.push(colArtificial);
+                
+                // Actualizar filaW (coeficiente 1 para variables artificiales)
+                filaW[colArtificial] = 1;
+                
+                colExceso++;
+                colArtificial++;
+            } else if (restriccion.tipo === '=') {
+                fila[colArtificial] = 1;
+                variablesArtificiales.push(colArtificial);
+                
+                // Actualizar filaW
+                filaW[colArtificial] = 1;
+                
+                colArtificial++;
+            }
+            
+            // Lado derecho
+            fila[totalColumnas - 1] = restriccion.rhs;
+            
+            tableau.push(fila);
+        });
+        
+        // Actualizar filaW para que solo tenga 1 en las columnas de variables artificiales
+        tableau.unshift(filaW);
         
         return { tableau, variablesArtificiales };
     }
     
     // Función para encontrar el pivote
     function encontrarPivote(tableau, esFase1) {
-        // Implementación de la regla del pivote
-        // Retorna { filaPivote, colPivote, puedeMejorar }
+        const numFilas = tableau.length;
+        const numColumnas = tableau[0].length;
+        const filaObj = esFase1 ? 0 : 1; // Fila 0 es W en Fase 1, fila 1 es Z en Fase 2
         
-        // Esta es una implementación simplificada
-        return { filaPivote: 0, colPivote: 0, puedeMejorar: false };
+        // Encontrar columna pivote (más negativo en fila objetivo)
+        let colPivote = -1;
+        let minValor = 0;
+        
+        for (let j = 0; j < numColumnas - 1; j++) {
+            const valor = tableau[filaObj][j];
+            if (valor < minValor) {
+                minValor = valor;
+                colPivote = j;
+            }
+        }
+        
+        if (colPivote === -1) {
+            return { filaPivote: -1, colPivote: -1, puedeMejorar: false };
+        }
+        
+        // Encontrar fila pivote (mínima razón positiva)
+        let filaPivote = -1;
+        let minRazon = Infinity;
+        
+        for (let i = 2; i < numFilas; i++) { // Saltar filas W y Z
+            if (tableau[i][colPivote] <= 0) continue;
+            
+            const razon = tableau[i][numColumnas - 1] / tableau[i][colPivote];
+            if (razon >= 0 && razon < minRazon) {
+                minRazon = razon;
+                filaPivote = i;
+            }
+        }
+        
+        if (filaPivote === -1) {
+            return { filaPivote: -1, colPivote: -1, puedeMejorar: false };
+        }
+        
+        return { filaPivote, colPivote, puedeMejorar: true };
     }
     
     // Función para pivotear
     function pivotear(tableau, filaPivote, colPivote) {
-        // Implementación del pivoteo
-        // Retorna el nuevo tableau
+        const nuevoTableau = JSON.parse(JSON.stringify(tableau));
+        const numFilas = nuevoTableau.length;
+        const numColumnas = nuevoTableau[0].length;
+        const elementoPivote = nuevoTableau[filaPivote][colPivote];
         
-        // Esta es una implementación simplificada
-        return tableau;
+        // Normalizar fila pivote
+        for (let j = 0; j < numColumnas; j++) {
+            nuevoTableau[filaPivote][j] /= elementoPivote;
+        }
+        
+        // Actualizar otras filas
+        for (let i = 0; i < numFilas; i++) {
+            if (i === filaPivote) continue;
+            
+            const factor = nuevoTableau[i][colPivote];
+            for (let j = 0; j < numColumnas; j++) {
+                nuevoTableau[i][j] -= factor * nuevoTableau[filaPivote][j];
+            }
+        }
+        
+        return nuevoTableau;
     }
     
     // Función para eliminar variables artificiales
     function eliminarVariablesArtificiales(tableau, variablesArtificiales) {
-        // Implementación de la eliminación de variables artificiales
-        // Retorna el tableau para la Fase 2
+        // Eliminar fila W (fase 1)
+        const nuevoTableau = tableau.slice(1);
         
-        // Esta es una implementación simplificada
-        return tableau;
+        // Eliminar columnas de variables artificiales
+        variablesArtificiales.sort((a, b) => b - a); // Orden descendente
+        
+        for (const col of variablesArtificiales) {
+            for (let i = 0; i < nuevoTableau.length; i++) {
+                nuevoTableau[i].splice(col, 1);
+            }
+        }
+        
+        return nuevoTableau;
     }
     
     // Función para extraer la solución
     function extraerSolucion(tableau, numVariables) {
-        // Implementación para extraer la solución del tableau final
-        // Retorna { valor, variables }
+        const numFilas = tableau.length;
+        const numColumnas = tableau[0].length;
+        const variables = new Array(numVariables).fill(0);
         
-        // Esta es una implementación simplificada
-        return { valor: 0, variables: Array(numVariables).fill(0) };
+        // Para cada variable original
+        for (let j = 0; j < numVariables; j++) {
+            let countUnos = 0;
+            let filaUnicoUno = -1;
+            
+            // Buscar columna con un solo 1 y otros 0
+            for (let i = 1; i < numFilas; i++) {
+                if (tableau[i][j] === 1) {
+                    countUnos++;
+                    filaUnicoUno = i;
+                } else if (tableau[i][j] !== 0) {
+                    countUnos = 2; // No es básica
+                    break;
+                }
+            }
+            
+            if (countUnos === 1) {
+                variables[j] = tableau[filaUnicoUno][numColumnas - 1];
+            }
+        }
+        
+        const valorOptimo = tableau[0][numColumnas - 1] * (tipoOptimizacion === 'min' ? 1 : -1);
+        
+        return { valor: valorOptimo, variables };
     }
     
     // Función para crear un paso del algoritmo
-    function crearPaso(titulo, descripcion, tableau, solucion = null) {
-        return { titulo, descripcion, tableau, solucion };
+    function crearPaso(titulo, descripcion, tableau, solucion = null, pivote = null) {
+        return { titulo, descripcion, tableau, solucion, filaPivote: pivote?.filaPivote, colPivote: pivote?.colPivote };
     }
     
     // Mostrar resultados
@@ -831,12 +1034,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 const headerRow = document.createElement('tr');
                 headerRow.appendChild(document.createElement('th'));
                 
-                for (let j = 0; j < paso.tableau[0].length - 1; j++) {
+                // Variables originales
+                for (let j = 0; j < variables; j++) {
                     const th = document.createElement('th');
                     th.textContent = `x${j+1}`;
                     headerRow.appendChild(th);
                 }
                 
+                // Variables de holgura/exceso/artificiales
+                const totalColumnas = paso.tableau[0].length;
+                let colActual = variables;
+                
+                // Variables de holgura (si)
+                for (let i = 0; i < totalColumnas - variables - 1; i++) {
+                    const th = document.createElement('th');
+                    th.textContent = `s${i+1}`;
+                    headerRow.appendChild(th);
+                    colActual++;
+                }
+                
+                // Columna RHS
                 const thRHS = document.createElement('th');
                 thRHS.textContent = 'RHS';
                 headerRow.appendChild(thRHS);
@@ -847,16 +1064,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Crear cuerpo
                 const tbody = document.createElement('tbody');
                 
+                // Etiquetas de filas
+                const etiquetas = ['W', 'Z'];
+                for (let i = 1; i <= restricciones; i++) {
+                    etiquetas.push(`R${i}`);
+                }
+                
                 for (let i = 0; i < paso.tableau.length; i++) {
                     const row = document.createElement('tr');
                     
                     // Etiqueta de fila
                     const th = document.createElement('th');
-                    if (i === 0) {
-                        th.textContent = 'Z';
-                    } else {
-                        th.textContent = `R${i}`;
-                    }
+                    th.textContent = etiquetas[i] || '';
                     row.appendChild(th);
                     
                     // Valores
@@ -905,4 +1124,439 @@ document.addEventListener('DOMContentLoaded', function() {
             pasosContainer.appendChild(stepDiv);
         });
     }
-});
+});*/
+
+let numVars = 3;
+        let numConstraints = 2;
+
+        function setupProblem() {
+            numVars = parseInt(document.getElementById('numVars').value);
+            numConstraints = parseInt(document.getElementById('numConstraints').value);
+
+            createObjectiveInputs();
+            createConstraintInputs();
+            document.getElementById('problemInputs').classList.remove('hidden');
+        }
+
+        function createObjectiveInputs() {
+            const container = document.getElementById('objectiveInputs');
+            container.innerHTML = '';
+            
+            const row = document.createElement('div');
+            row.className = 'input-row';
+            
+            row.innerHTML = '<span>Z = </span>';
+            
+            for (let i = 0; i < numVars; i++) {
+                if (i > 0) row.innerHTML += '<span> + </span>';
+                row.innerHTML += `<input type="number" id="c${i}" value="0" step="0.1"> <span>x${i+1}</span>`;
+            }
+            
+            container.appendChild(row);
+        }
+
+        function createConstraintInputs() {
+            const container = document.getElementById('constraintInputs');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < numConstraints; i++) {
+                const row = document.createElement('div');
+                row.className = 'input-row';
+                
+                let html = '';
+                for (let j = 0; j < numVars; j++) {
+                    if (j > 0) html += '<span> + </span>';
+                    html += `<input type="number" id="a${i}_${j}" value="0" step="0.1"> <span>x${j+1}</span>`;
+                }
+                
+                html += `
+                    <select id="op${i}">
+                        <option value="=">=</option>
+                        <option value="<=">≤</option>
+                        <option value=">=">≥</option>
+                    </select>
+                    <input type="number" id="b${i}" value="0" step="0.1">
+                `;
+                
+                row.innerHTML = html;
+                container.appendChild(row);
+            }
+        }
+
+        function solveTwoPhase() {
+            try {
+                const problem = getProblemData();
+                const solution = twoPhaseMethod(problem);
+                displaySolution(solution);
+                document.getElementById('results').classList.remove('hidden');
+            } catch (error) {
+                displayError(error.message);
+                document.getElementById('results').classList.remove('hidden');
+            }
+        }
+
+        function getProblemData() {
+            const c = [];
+            for (let i = 0; i < numVars; i++) {
+                c.push(parseFloat(document.getElementById(`c${i}`).value) || 0);
+            }
+
+            const A = [];
+            const b = [];
+            const operators = [];
+
+            for (let i = 0; i < numConstraints; i++) {
+                const row = [];
+                for (let j = 0; j < numVars; j++) {
+                    row.push(parseFloat(document.getElementById(`a${i}_${j}`).value) || 0);
+                }
+                A.push(row);
+                b.push(parseFloat(document.getElementById(`b${i}`).value) || 0);
+                operators.push(document.getElementById(`op${i}`).value);
+            }
+
+            return { c, A, b, operators };
+        }
+
+        function twoPhaseMethod(problem) {
+            const steps = [];
+            
+            // Fase 1: Convertir a forma estándar y resolver problema auxiliar
+            const phase1Problem = setupPhase1(problem);
+            steps.push({
+                phase: 1,
+                title: "Configuración de la Fase 1",
+                description: "Convertir el problema a forma estándar y crear problema auxiliar",
+                tableau: [...phase1Problem.tableau]
+            });
+
+            // Resolver Fase 1
+            const phase1Solution = solveSimplex(phase1Problem.tableau, 1);
+            steps.push(...phase1Solution.steps);
+
+            // Verificar factibilidad
+            if (phase1Solution.objectiveValue > 1e-6) {
+                throw new Error("El problema no tiene solución factible");
+            }
+
+            // Fase 2: Resolver problema original
+            const phase2Problem = setupPhase2(phase1Solution.finalTableau, problem);
+            steps.push({
+                phase: 2,
+                title: "Configuración de la Fase 2",
+                description: "Eliminar variables artificiales y usar función objetivo original",
+                tableau: [...phase2Problem.tableau]
+            });
+
+            const phase2Solution = solveSimplex(phase2Problem.tableau, 2);
+            steps.push(...phase2Solution.steps);
+
+            return {
+                steps,
+                optimalValue: -phase2Solution.objectiveValue,
+                optimalSolution: extractSolution(phase2Solution.finalTableau, numVars),
+                iterations: phase1Solution.iterations + phase2Solution.iterations
+            };
+        }
+
+        function setupPhase1(problem) {
+            const { c, A, b, operators } = problem;
+            let tableau = [];
+            let artificialVars = 0;
+            
+            // Crear tableau inicial
+            for (let i = 0; i < numConstraints; i++) {
+                let row = [...A[i]];
+                
+                // Agregar variables de holgura/exceso
+                for (let j = 0; j < numConstraints; j++) {
+                    if (i === j) {
+                        if (operators[i] === '<=') row.push(1);
+                        else if (operators[i] === '>=') row.push(-1);
+                        else row.push(0);
+                    } else {
+                        row.push(0);
+                    }
+                }
+                
+                // Agregar variables artificiales
+                for (let j = 0; j < numConstraints; j++) {
+                    if (i === j && (operators[i] === '>=' || operators[i] === '=')) {
+                        row.push(1);
+                        artificialVars++;
+                    } else {
+                        row.push(0);
+                    }
+                }
+                
+                row.push(b[i]);
+                tableau.push(row);
+            }
+            
+            // Función objetivo para Fase 1 (minimizar suma de variables artificiales)
+            let objRow = new Array(numVars + numConstraints + artificialVars + 1).fill(0);
+            let colIndex = numVars + numConstraints;
+            for (let i = 0; i < numConstraints; i++) {
+                if (operators[i] === '>=' || operators[i] === '=') {
+                    objRow[colIndex] = 1;
+                    colIndex++;
+                }
+            }
+            
+            tableau.push(objRow);
+            
+            // Eliminar variables artificiales de la función objetivo
+            for (let i = 0; i < numConstraints; i++) {
+                if (operators[i] === '>=' || operators[i] === '=') {
+                    for (let j = 0; j < tableau[0].length; j++) {
+                        tableau[tableau.length - 1][j] -= tableau[i][j];
+                    }
+                }
+            }
+            
+            return { tableau, artificialVars };
+        }
+
+        function setupPhase2(phase1Tableau, originalProblem) {
+            // Eliminar columnas de variables artificiales
+            let tableau = [];
+            const numCols = numVars + numConstraints + 1;
+            
+            for (let i = 0; i < phase1Tableau.length - 1; i++) {
+                let row = [];
+                for (let j = 0; j < numCols; j++) {
+                    row.push(phase1Tableau[i][j]);
+                }
+                tableau.push(row);
+            }
+            
+            // Crear nueva función objetivo
+            let objRow = new Array(numCols).fill(0);
+            for (let i = 0; i < numVars; i++) {
+                objRow[i] = -originalProblem.c[i]; // Negativo para maximización
+            }
+            tableau.push(objRow);
+            
+            return { tableau };
+        }
+
+        function solveSimplex(tableau, phase) {
+            const steps = [];
+            let iteration = 0;
+            const maxIterations = 100;
+            
+            while (iteration < maxIterations) {
+                // Buscar variable de entrada
+                const enteringCol = findEnteringVariable(tableau);
+                if (enteringCol === -1) break; // Óptimo encontrado
+                
+                // Buscar variable de salida
+                const leavingRow = findLeavingVariable(tableau, enteringCol);
+                if (leavingRow === -1) {
+                    throw new Error("Problema no acotado");
+                }
+                
+                // Realizar pivoteo
+                pivot(tableau, leavingRow, enteringCol);
+                
+                iteration++;
+                steps.push({
+                    phase,
+                    title: `Iteración ${iteration}`,
+                    description: `Variable x${enteringCol + 1} entra, fila ${leavingRow + 1} sale`,
+                    tableau: tableau.map(row => [...row])
+                });
+            }
+            
+            if (iteration >= maxIterations) {
+                throw new Error("Máximo número de iteraciones alcanzado");
+            }
+            
+            const objValue = tableau[tableau.length - 1][tableau[0].length - 1];
+            
+            return {
+                steps,
+                finalTableau: tableau,
+                objectiveValue: objValue,
+                iterations: iteration
+            };
+        }
+
+        function findEnteringVariable(tableau) {
+            const objRow = tableau[tableau.length - 1];
+            let minIndex = -1;
+            let minValue = 0;
+            
+            for (let j = 0; j < objRow.length - 1; j++) {
+                if (objRow[j] < minValue) {
+                    minValue = objRow[j];
+                    minIndex = j;
+                }
+            }
+            
+            return minIndex;
+        }
+
+        function findLeavingVariable(tableau, enteringCol) {
+            let minRatio = Infinity;
+            let leavingRow = -1;
+            
+            for (let i = 0; i < tableau.length - 1; i++) {
+                if (tableau[i][enteringCol] > 0) {
+                    const ratio = tableau[i][tableau[i].length - 1] / tableau[i][enteringCol];
+                    if (ratio < minRatio) {
+                        minRatio = ratio;
+                        leavingRow = i;
+                    }
+                }
+            }
+            
+            return leavingRow;
+        }
+
+        function pivot(tableau, pivotRow, pivotCol) {
+            const pivotElement = tableau[pivotRow][pivotCol];
+            
+            // Normalizar fila pivote
+            for (let j = 0; j < tableau[pivotRow].length; j++) {
+                tableau[pivotRow][j] /= pivotElement;
+            }
+            
+            // Eliminar otras entradas en la columna pivote
+            for (let i = 0; i < tableau.length; i++) {
+                if (i !== pivotRow) {
+                    const factor = tableau[i][pivotCol];
+                    for (let j = 0; j < tableau[i].length; j++) {
+                        tableau[i][j] -= factor * tableau[pivotRow][j];
+                    }
+                }
+            }
+        }
+
+        function extractSolution(tableau, numOriginalVars) {
+            const solution = new Array(numOriginalVars).fill(0);
+            
+            for (let j = 0; j < numOriginalVars; j++) {
+                // Buscar si la variable es básica
+                let isBasic = false;
+                let basicRow = -1;
+                let oneCount = 0;
+                
+                for (let i = 0; i < tableau.length - 1; i++) {
+                    if (Math.abs(tableau[i][j] - 1) < 1e-6) {
+                        oneCount++;
+                        basicRow = i;
+                    } else if (Math.abs(tableau[i][j]) > 1e-6) {
+                        break;
+                    }
+                }
+                
+                if (oneCount === 1 && basicRow !== -1) {
+                    solution[j] = tableau[basicRow][tableau[basicRow].length - 1];
+                }
+            }
+            
+            return solution;
+        }
+
+        function displaySolution(solution) {
+            const container = document.getElementById('solution');
+            container.innerHTML = '';
+            
+            if (solution.steps.length === 0) {
+                container.innerHTML = '<div class="error-box"><strong>Error:</strong> No se pudo resolver el problema</div>';
+                return;
+            }
+            
+            // Mostrar pasos del algoritmo
+            solution.steps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'step';
+                stepDiv.innerHTML = `
+                    <div class="step-title">
+                        <span class="phase-indicator phase-${step.phase}">Fase ${step.phase}</span>
+                        ${step.title}
+                    </div>
+                    <p><strong>Descripción:</strong> ${step.description}</p>
+                    <div class="table-container">
+                        ${createTableauHTML(step.tableau)}
+                    </div>
+                `;
+                container.appendChild(stepDiv);
+            });
+            
+            // Mostrar solución óptima
+            const solutionDiv = document.createElement('div');
+            solutionDiv.className = 'solution-box';
+            solutionDiv.innerHTML = `
+                <div class="solution-title">Solución Óptima Encontrada</div>
+                <p><strong>Valor óptimo:</strong> Z = ${-(solution.optimalValue.toFixed(4))}</p>
+                <p><strong>Variables:</strong></p>
+                <ul>
+                    ${solution.optimalSolution.map((val, i) => 
+                        `<li>x${i+1} = ${val.toFixed(4)}</li>`
+                    ).join('')}
+                </ul>
+                <p><strong>Total de iteraciones:</strong> ${solution.iterations}</p>
+            `;
+            container.appendChild(solutionDiv);
+        }
+
+        function createTableauHTML(tableau) {
+            let html = '<table><thead><tr>';
+            
+            // Headers
+            for (let j = 0; j < numVars; j++) {
+                html += `<th>x${j+1}</th>`;
+            }
+            for (let j = 0; j < numConstraints; j++) {
+                html += `<th>s${j+1}</th>`;
+            }
+            html += '<th>RHS</th></tr></thead><tbody>';
+            
+            // Filas del tableau
+            for (let i = 0; i < tableau.length; i++) {
+                html += '<tr>';
+                for (let j = 0; j < tableau[i].length; j++) {
+                    const value = Math.abs(tableau[i][j]) < 1e-10 ? 0 : tableau[i][j];
+                    html += `<td>${value.toFixed(3)}</td>`;
+                }
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function displayError(message) {
+            const container = document.getElementById('solution');
+            container.innerHTML = `<div class="error-box"><strong>Error:</strong> ${message}</div>`;
+        }
+
+        function clearResults() {
+            document.getElementById('results').classList.add('hidden');
+        }
+
+        // Inicializar con problema de ejemplo
+        window.onload = function() {
+            setupProblem();
+            
+            // Ejemplo: Max Z = 3x1 + 2x2 + x3
+            // s.a: x1 + x2 + x3 = 6
+            //      2x1 + x2 ≤ 8
+            document.getElementById('c0').value = 3;
+            document.getElementById('c1').value = 2;
+            document.getElementById('c2').value = 1;
+            
+            document.getElementById('a0_0').value = 1;
+            document.getElementById('a0_1').value = 1;
+            document.getElementById('a0_2').value = 1;
+            document.getElementById('op0').value = '=';
+            document.getElementById('b0').value = 6;
+            
+            document.getElementById('a1_0').value = 2;
+            document.getElementById('a1_1').value = 1;
+            document.getElementById('a1_2').value = 0;
+            document.getElementById('op1').value = '<=';
+            document.getElementById('b1').value = 8;
+        };

@@ -1,4 +1,4 @@
-class LinearProgramSolver {
+/*class LinearProgramSolver {
     constructor() {
         this.chart = null;
         this.constraintsCount = 0;
@@ -486,4 +486,531 @@ class LinearProgramSolver {
 // Inicializar al cargar la página
 document.addEventListener('DOMContentLoaded', () => {
     window.solver = new LinearProgramSolver();
+});*/
+
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoOptimizacionSelect = document.getElementById('tipo-optimizacion');
+    const coefX1Input = document.getElementById('coef-x1');
+    const coefX2Input = document.getElementById('coef-x2');
+    const restriccionesContainer = document.getElementById('restricciones-container');
+    const agregarRestriccionBtn = document.getElementById('agregar-restriccion');
+    const resolverBtn = document.getElementById('resolver-btn');
+    const resultadosCard = document.getElementById('resultados-card');
+    const graficoCanvas = document.getElementById('grafico');
+    const pasosContainer = document.getElementById('pasos-container');
+    const solucionInfo = document.getElementById('solucion-info');
+    
+    let restricciones = [];
+    let grafico = null;
+    
+    // Agregar primera restricción por defecto
+    agregarRestriccion();
+    agregarRestriccion();
+    
+    // Función para agregar una nueva restricción
+    agregarRestriccionBtn.addEventListener('click', agregarRestriccion);
+    
+    function agregarRestriccion() {
+        const restriccionId = restricciones.length;
+        const restriccionDiv = document.createElement('div');
+        restriccionDiv.className = 'restriccion';
+        restriccionDiv.style.marginBottom = '20px';
+        restriccionDiv.style.padding = '15px';
+        restriccionDiv.style.backgroundColor = '#f9f9f9';
+        restriccionDiv.style.borderRadius = '8px';
+        
+        const titulo = document.createElement('h4');
+        titulo.textContent = `Restricción ${restriccionId + 1}`;
+        restriccionDiv.appendChild(titulo);
+        
+        const inputsDiv = document.createElement('div');
+        inputsDiv.className = 'input-section';
+        
+        // Coeficiente x1
+        const grupoX1 = document.createElement('div');
+        grupoX1.className = 'input-group';
+        
+        const labelX1 = document.createElement('label');
+        labelX1.textContent = 'Coeficiente x₁:';
+        
+        const inputX1 = document.createElement('input');
+        inputX1.type = 'number';
+        inputX1.step = 'any';
+        inputX1.value = [1, 2, 1][restriccionId] || 1;
+        inputX1.dataset.restriccion = restriccionId;
+        inputX1.dataset.variable = 'x1';
+        inputX1.classList.add('coef-restriccion');
+        
+        grupoX1.appendChild(labelX1);
+        grupoX1.appendChild(inputX1);
+        inputsDiv.appendChild(grupoX1);
+        
+        // Coeficiente x2
+        const grupoX2 = document.createElement('div');
+        grupoX2.className = 'input-group';
+        
+        const labelX2 = document.createElement('label');
+        labelX2.textContent = 'Coeficiente x₂:';
+        
+        const inputX2 = document.createElement('input');
+        inputX2.type = 'number';
+        inputX2.step = 'any';
+        inputX2.value = [1, 1, 2][restriccionId] || 1;
+        inputX2.dataset.restriccion = restriccionId;
+        inputX2.dataset.variable = 'x2';
+        inputX2.classList.add('coef-restriccion');
+        
+        grupoX2.appendChild(labelX2);
+        grupoX2.appendChild(inputX2);
+        inputsDiv.appendChild(grupoX2);
+        
+        // Operador
+        const grupoOp = document.createElement('div');
+        grupoOp.className = 'input-group';
+        
+        const labelOp = document.createElement('label');
+        labelOp.textContent = 'Operador:';
+        
+        const selectOp = document.createElement('select');
+        selectOp.dataset.restriccion = restriccionId;
+        selectOp.classList.add('operador-restriccion');
+        
+        const opciones = ['≤', '≥', '='];
+        opciones.forEach(op => {
+            const option = document.createElement('option');
+            option.value = op;
+            option.textContent = op;
+            selectOp.appendChild(option);
+        });
+        
+        // Valor por defecto para la primera restricción
+        if (restriccionId === 0) selectOp.value = '≤';
+        if (restriccionId === 1) selectOp.value = '≤';
+        
+        grupoOp.appendChild(labelOp);
+        grupoOp.appendChild(selectOp);
+        inputsDiv.appendChild(grupoOp);
+        
+        // Lado derecho
+        const grupoRHS = document.createElement('div');
+        grupoRHS.className = 'input-group';
+        
+        const labelRHS = document.createElement('label');
+        labelRHS.textContent = 'Valor:';
+        
+        const inputRHS = document.createElement('input');
+        inputRHS.type = 'number';
+        inputRHS.step = 'any';
+        inputRHS.value = [10, 12, 8][restriccionId] || 0;
+        inputRHS.dataset.restriccion = restriccionId;
+        inputRHS.classList.add('rhs-restriccion');
+        
+        grupoRHS.appendChild(labelRHS);
+        grupoRHS.appendChild(inputRHS);
+        inputsDiv.appendChild(grupoRHS);
+        
+        // Botón para eliminar
+        const eliminarBtn = document.createElement('button');
+        eliminarBtn.textContent = 'Eliminar';
+        eliminarBtn.style.backgroundColor = '#dc3545';
+        eliminarBtn.addEventListener('click', function() {
+            restriccionesContainer.removeChild(restriccionDiv);
+            actualizarNumeracion();
+        });
+        
+        inputsDiv.appendChild(eliminarBtn);
+        restriccionDiv.appendChild(inputsDiv);
+        restriccionesContainer.appendChild(restriccionDiv);
+        
+        // Actualizar contador de restricciones
+        actualizarNumeracion();
+    }
+    
+    function actualizarNumeracion() {
+        const restriccionesDivs = document.querySelectorAll('.restriccion');
+        restriccionesDivs.forEach((div, index) => {
+            div.querySelector('h4').textContent = `Restricción ${index + 1}`;
+        });
+    }
+    
+    // Resolver el problema gráficamente
+    resolverBtn.addEventListener('click', function() {
+        // Leer datos del problema
+        const tipoOptimizacion = tipoOptimizacionSelect.value;
+        const coefFO = {
+            x1: parseFloat(coefX1Input.value),
+            x2: parseFloat(coefX2Input.value)
+        };
+        
+        // Leer restricciones
+        restricciones = [];
+        const restriccionesDivs = document.querySelectorAll('.restriccion');
+        
+        restriccionesDivs.forEach(div => {
+            const restriccionId = div.querySelector('.coef-restriccion').dataset.restriccion;
+            
+            restricciones.push({
+                x1: parseFloat(div.querySelector(`.coef-restriccion[data-variable="x1"]`).value),
+                x2: parseFloat(div.querySelector(`.coef-restriccion[data-variable="x2"]`).value),
+                operador: div.querySelector('.operador-restriccion').value,
+                valor: parseFloat(div.querySelector('.rhs-restriccion').value)
+            });
+        });
+        
+        // Validar datos
+        if (isNaN(coefFO.x1)) coefFO.x1 = 0;
+        if (isNaN(coefFO.x2)) coefFO.x2 = 0;
+        
+        restricciones = restricciones.filter(r => !isNaN(r.x1) && !isNaN(r.x2) && !isNaN(r.valor));
+        
+        if (restricciones.length < 2) {
+            alert('Se necesitan al menos 2 restricciones para el método gráfico');
+            return;
+        }
+        
+        // Resolver el problema
+        const { vertices, solucion, pasos } = resolverProblemaGrafico(coefFO, restricciones, tipoOptimizacion);
+        
+        // Mostrar resultados
+        mostrarResultados(vertices, solucion, pasos);
+        resultadosCard.style.display = 'block';
+    });
+    
+    // Función para resolver el problema gráfico
+    function resolverProblemaGrafico(coefFO, restricciones, tipoOptimizacion) {
+        const pasos = [];
+        
+        // Paso 1: Graficar restricciones
+        pasos.push({
+            titulo: "Paso 1: Graficar Restricciones",
+            descripcion: "Convertir cada restricción a ecuación y encontrar puntos de corte con ejes."
+        });
+        
+        // Convertir restricciones a ecuaciones para graficar
+        const lineas = restricciones.map(r => {
+            // Ecuación: r.x1 * x + r.x2 * y = r.valor
+            // Encontrar puntos de corte con ejes
+            let puntoX, puntoY;
+            
+            // Corte con eje Y (x=0)
+            if (r.x2 !== 0) {
+                puntoY = r.valor / r.x2;
+            } else {
+                puntoY = null; // Línea vertical
+            }
+            
+            // Corte con eje X (y=0)
+            if (r.x1 !== 0) {
+                puntoX = r.valor / r.x1;
+            } else {
+                puntoX = null; // Línea horizontal
+            }
+            
+            return {
+                ...r,
+                puntoX,
+                puntoY,
+                color: getRandomColor()
+            };
+        });
+        
+        pasos.push({
+            titulo: "Puntos de Corte con Ejes",
+            descripcion: "Puntos donde cada restricción corta los ejes X e Y.",
+            lineas
+        });
+        
+        // Paso 2: Encontrar región factible
+        pasos.push({
+            titulo: "Paso 2: Determinar Región Factible",
+            descripcion: "Identificar el área que satisface todas las restricciones simultáneamente."
+        });
+        
+        // Paso 3: Encontrar vértices de la región factible
+        pasos.push({
+            titulo: "Paso 3: Encontrar Vértices de la Región Factible",
+            descripcion: "Calcular los puntos de intersección entre las restricciones."
+        });
+        
+        // Calcular intersecciones entre todas las restricciones
+        const vertices = [];
+        
+        for (let i = 0; i < restricciones.length; i++) {
+            for (let j = i + 1; j < restricciones.length; j++) {
+                const interseccion = calcularInterseccion(restricciones[i], restricciones[j]);
+                
+                if (interseccion && esFactible(interseccion, restricciones)) {
+                    vertices.push(interseccion);
+                }
+            }
+        }
+        
+        // Agregar puntos de corte con ejes que sean factibles
+        lineas.forEach(linea => {
+            if (linea.puntoX !== null) {
+                const punto = { x: linea.puntoX, y: 0 };
+                if (esFactible(punto, restricciones)) vertices.push(punto);
+            }
+            
+            if (linea.puntoY !== null) {
+                const punto = { x: 0, y: linea.puntoY };
+                if (esFactible(punto, restricciones)) vertices.push(punto);
+            }
+        });
+        
+        // Eliminar duplicados
+        const verticesUnicos = [];
+        const existeVertice = {};
+        
+        vertices.forEach(v => {
+            const key = `${v.x.toFixed(2)},${v.y.toFixed(2)}`;
+            if (!existeVertice[key]) {
+                existeVertice[key] = true;
+                verticesUnicos.push(v);
+            }
+        });
+        
+        pasos.push({
+            titulo: "Vértices de la Región Factible",
+            descripcion: "Puntos que definen los límites de la región factible.",
+            vertices: verticesUnicos
+        });
+        
+        // Paso 4: Evaluar función objetivo en vértices
+        pasos.push({
+            titulo: "Paso 4: Evaluar Función Objetivo en Vértices",
+            descripcion: "Calcular Z = " + (tipoOptimizacion === 'max' ? 'Max' : 'Min') + 
+                        `(${coefFO.x1}x₁ + ${coefFO.x2}x₂) en cada vértice.`
+        });
+        
+        // Evaluar función objetivo en cada vértice
+        verticesUnicos.forEach(v => {
+            v.z = coefFO.x1 * v.x + coefFO.x2 * v.y;
+        });
+        
+        // Encontrar solución óptima
+        let solucion;
+        if (tipoOptimizacion === 'max') {
+            solucion = verticesUnicos.reduce((max, v) => v.z > max.z ? v : max);
+        } else {
+            solucion = verticesUnicos.reduce((min, v) => v.z < min.z ? v : min);
+        }
+        
+        pasos.push({
+            titulo: "Solución Óptima",
+            descripcion: `El ${tipoOptimizacion === 'max' ? 'máximo' : 'mínimo'} valor de Z se encuentra en (${solucion.x.toFixed(2)}, ${solucion.y.toFixed(2)}).`,
+            solucion
+        });
+        
+        return {
+            vertices: verticesUnicos,
+            solucion,
+            pasos,
+            lineas
+        };
+    }
+    
+    // Función para calcular intersección entre dos restricciones
+    function calcularInterseccion(r1, r2) {
+        const denominador = r1.x1 * r2.x2 - r1.x2 * r2.x1;
+        
+        if (denominador === 0) {
+            return null; // Rectas paralelas
+        }
+        
+        const x = (r1.x2 * r2.valor - r2.x2 * r1.valor) / denominador;
+        const y = (r2.x1 * r1.valor - r1.x1 * r2.valor) / denominador;
+        
+        return { x, y };
+    }
+    
+    // Función para verificar si un punto es factible
+    function esFactible(punto, restricciones) {
+        return restricciones.every(r => {
+            const valorLadoIzq = r.x1 * punto.x + r.x2 * punto.y;
+            
+            switch (r.operador) {
+                case '≤': return valorLadoIzq <= r.valor;
+                case '≥': return valorLadoIzq >= r.valor;
+                case '=': return Math.abs(valorLadoIzq - r.valor) < 0.001;
+                default: return true;
+            }
+        });
+    }
+    
+    // Función para mostrar resultados
+    function mostrarResultados(vertices, solucion, pasos) {
+        // Limpiar resultados anteriores
+        pasosContainer.innerHTML = '';
+        
+        // Mostrar pasos del algoritmo
+        pasos.forEach((paso, index) => {
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'step';
+            
+            const title = document.createElement('div');
+            title.className = 'step-title';
+            title.textContent = paso.titulo;
+            stepDiv.appendChild(title);
+            
+            const desc = document.createElement('div');
+            desc.textContent = paso.descripcion;
+            stepDiv.appendChild(desc);
+            
+            // Mostrar detalles adicionales si existen
+            if (paso.lineas) {
+                const detalles = document.createElement('div');
+                detalles.style.marginTop = '10px';
+                
+                paso.lineas.forEach((linea, i) => {
+                    const detalle = document.createElement('div');
+                    detalle.style.marginBottom = '5px';
+                    
+                    let texto = `Restricción ${i+1}: ${linea.x1}x₁ + ${linea.x2}x₂ ${linea.operador} ${linea.valor}`;
+                    if (linea.puntoX !== null) texto += ` | Corte X: (${linea.puntoX.toFixed(2)}, 0)`;
+                    if (linea.puntoY !== null) texto += ` | Corte Y: (0, ${linea.puntoY.toFixed(2)})`;
+                    
+                    detalle.textContent = texto;
+                    detalles.appendChild(detalle);
+                });
+                
+                stepDiv.appendChild(detalles);
+            }
+            
+            if (paso.vertices) {
+                const detalles = document.createElement('div');
+                detalles.style.marginTop = '10px';
+                
+                paso.vertices.forEach((v, i) => {
+                    const detalle = document.createElement('div');
+                    detalle.style.marginBottom = '5px';
+                    detalle.textContent = `Vértice ${i+1}: (${v.x.toFixed(2)}, ${v.y.toFixed(2)}) | Z = ${v.z.toFixed(2)}`;
+                    detalles.appendChild(detalle);
+                });
+                
+                stepDiv.appendChild(detalles);
+            }
+            
+            pasosContainer.appendChild(stepDiv);
+        });
+        
+        // Mostrar solución óptima
+        solucionInfo.innerHTML = `
+            <div>Valor óptimo: <strong>${solucion.z.toFixed(2)}</strong></div>
+            <div>En el punto: <strong>(${solucion.x.toFixed(2)}, ${solucion.y.toFixed(2)})</strong></div>
+            <div>Donde x₁ = ${solucion.x.toFixed(2)}, x₂ = ${solucion.y.toFixed(2)}</div>
+        `;
+
+        const centro = {
+            x: vertices.reduce((sum, v) => sum + v.x, 0) / vertices.length,
+            y: vertices.reduce((sum, v) => sum + v.y, 0) / vertices.length
+        };
+        
+        // Ordenar vértices en sentido horario
+        const verticesOrdenados = [...vertices].sort((a, b) => {
+            const angleA = Math.atan2(a.y - centro.y, a.x - centro.x);
+            const angleB = Math.atan2(b.y - centro.y, b.x - centro.x);
+            return angleA - angleB;
+        });
+        
+        // Asegurarse de que el primer y último punto sean iguales para cerrar el polígono
+        if (verticesOrdenados.length > 0) {
+            verticesOrdenados.push({...verticesOrdenados[0]});
+        }
+        
+        // Crear gráfico
+        if (grafico) grafico.destroy();
+        
+        const ctx = graficoCanvas.getContext('2d');
+        grafico = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    // Restricciones como líneas
+                    ...pasos[1].lineas.map(linea => ({
+                        label: `${linea.x1}x₁ + ${linea.x2}x₂ ${linea.operador} ${linea.valor}`,
+                        data: [
+                            { x: linea.puntoX, y: 0 },
+                            { x: 0, y: linea.puntoY }
+                        ],
+                        showLine: true,
+                        borderColor: linea.color,
+                        backgroundColor: linea.color,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    })),
+                    
+                    // Región factible (relleno)
+                    {
+                        label: 'Región Factible',
+                        data: verticesOrdenados, // Asegúrate que los vértices estén en orden
+                        backgroundColor: 'rgba(100, 200, 100, 0.6)', // Verde más intenso con 60% opacidad
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                        fill: true // Asegurarse que se rellene el área
+                    },
+                    
+                    // Solución óptima
+                    {
+                        label: 'Solución Óptima',
+                        data: [solucion],
+                        backgroundColor: 'rgba(255, 99, 132, 1)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2,
+                        pointRadius: 8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'center',
+                        title: {
+                            display: true,
+                            text: 'x₁'
+                        },
+                        min: 0,
+                        max: Math.max(10, ...vertices.map(v => v.x)) * 1.2
+                    },
+                    y: {
+                        type: 'linear',
+                        position: 'center',
+                        title: {
+                            display: true,
+                            text: 'x₂'
+                        },
+                        min: 0,
+                        max: Math.max(10, ...vertices.map(v => v.y)) * 1.2
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `(${context.parsed.x.toFixed(2)}, ${context.parsed.y.toFixed(2)})`;
+                            }
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    }
+    
+    // Función auxiliar para generar colores aleatorios
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
 });

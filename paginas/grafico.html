@@ -8,11 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Método Gráfico</h1>
+    <!--div class="container">
+        <h1>Método Gráfico</h1-->
         
         <!-- Sección de entrada de datos -->
-        <div class="input-section">
+        <!--div class="input-section">
             <h2>Ingrese los datos del problema</h2>
             
             <div class="form-group">
@@ -41,10 +41,10 @@
                 <button id="example-btn" class="btn info">Ejemplo IBM</button>
                 <button id="reset-btn" class="btn danger">Reiniciar</button>
             </div>
-        </div>
+        </div-->
 
         <!-- Sección de resultados -->
-        <div class="results-section">
+        <!--div class="results-section">
             <h2>Solución Gráfica</h2>
             <div class="chart-container">
                 <canvas id="graphCanvas"></canvas>
@@ -52,6 +52,70 @@
             
             <div id="solution-steps"></div>
         </div>
+    </div-->
+
+    <div class="container">
+        <header>
+            <h1>Método Gráfico</h1>
+            <p class="subtitle">Solución de problemas de Programación Lineal con 2 variables</p>
+        </header>
+        
+        <div class="card">
+            <h2 class="card-title">Configuración del Problema</h2>
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="tipo-optimizacion">Tipo de Optimización:</label>
+                    <select id="tipo-optimizacion">
+                        <option value="max">Maximizar</option>
+                        <option value="min">Minimizar</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="coef-x1">Coeficiente de x₁:</label>
+                    <input type="number" id="coef-x1" step="any" value="3">
+                </div>
+                
+                <div class="input-group">
+                    <label for="coef-x2">Coeficiente de x₂:</label>
+                    <input type="number" id="coef-x2" step="any" value="2">
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title">Restricciones</h2>
+            <div id="restricciones-container">
+                <!-- Restricciones se generarán aquí -->
+            </div>
+            
+            <button id="agregar-restriccion">Agregar Restricción</button>
+            <button id="resolver-btn">Resolver Gráficamente</button>
+        </div>
+        
+        <div class="card" id="resultados-card" style="display: none;">
+            <h2 class="card-title">Solución Gráfica</h2>
+            
+            <div class="graph-container">
+                <canvas id="grafico"></canvas>
+            </div>
+            
+            <div id="pasos-container">
+                <!-- Pasos del método se mostrarán aquí -->
+            </div>
+            
+            <div class="solution-card" id="solucion-card">
+                <div class="solution-title">Solución Óptima</div>
+                <div id="solucion-info"></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Proyecto Final - Métodos Cuantitativos para la Toma de Decisiones</p>
+            <p>Método Gráfico para Programación Lineal</p>
+        </footer>
     </div>
 
     <script src="../scripts/grafico.js"></script>

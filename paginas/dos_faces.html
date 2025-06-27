@@ -26,7 +26,7 @@
         
         <div id="solution-steps"></div>
     </div-->
-    <div class="container">
+    <!--div class="container">
         <header>
             <h1>Método de Dos Fases</h1>
             <p class="subtitle">Solución de problemas de Programación Lineal</p>
@@ -61,28 +61,74 @@
             <h2 class="card-title">Ingresar Datos del Problema</h2>
             
             <div id="funcion-objetivo-container">
-                <h3>Función Objetivo</h3>
+                <h3>Función Objetivo</h3-->
                 <!-- Se generan los inputs para la función objetivo -->
-            </div>
+            <!--/div>
             
             <div id="restricciones-container">
-                <h3>Restricciones</h3>
+                <h3>Restricciones</h3-->
                 <!-- Se generan los inputs para las restricciones -->
-            </div>
+            <!--/div>
             
             <button id="resolver-btn">Resolver con Método de Dos Fases</button>
-        </div>
+        </div-->
         
-        <div class="card" id="resultados-card" style="display: none;">
+        <!--div class="card" id="resultados-card" style="display: none;">
             <h2 class="card-title">Solución por Dos Fases</h2>
-            <div id="pasos-container">
+            <div id="pasos-container"-->
                 <!-- Aquí se mostrarán los pasos del algoritmo -->
-            </div>
+            <!--/div>
         </div>
         
         <footer>
             <p>Proyecto Final - Métodos Cuantitativos para la Toma de Decisiones</p>
             <p>Método de Dos Fases para Programación Lineal</p>
+        </footer>
+    </div-->
+    <div class="container">
+        <header>
+            <h1>Método de Dos Fases</h1>
+            <p class="subtitle">Resolución de problemas de programación lineal con restricciones de igualdad</p>
+        </header>
+
+        <div class="card">
+            <div class="card-title">Configuración del Problema</div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Número de variables:</label>
+                    <input type="number" id="numVars" min="2" max="10" value="3">
+                </div>
+                <div class="input-group">
+                    <label>Número de restricciones:</label>
+                    <input type="number" id="numConstraints" min="1" max="10" value="2">
+                </div>
+            </div>
+            <button onclick="setupProblem()">Configurar Problema</button>
+        </div>
+
+        <div id="problemInputs" class="hidden">
+            <div class="card">
+                <div class="card-title">Función Objetivo (Maximizar)</div>
+                <div id="objectiveInputs"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Restricciones del Problema</div>
+                <div id="constraintInputs"></div>
+                
+                <button onclick="solveTwoPhase()">Resolver con Método de Dos Fases</button>
+                <button onclick="clearResults()">Limpiar Resultados</button>
+            </div>
+        </div>
+
+        <div id="results" class="card hidden">
+            <div class="card-title">Resultados del Método de Dos Fases</div>
+            <div id="solution"></div>
+        </div>
+
+        <footer>
+            <p>Método de Dos Fases - Investigación Operativa | Algoritmo Simplex Avanzado</p>
         </footer>
     </div>
     <script src="../scripts/dos_faces.js"></script>
