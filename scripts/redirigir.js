@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('btnSimplex').addEventListener('click', function() {
-            window.location.href = 'simplex.html';
+            window.location.href = 'PROYECTO-OPERATIVA/paginas/simplex.html';
         });
     
         document.getElementById('btnGrafico').addEventListener('click', function() {
