@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     
     // Opcional: Redirección con retraso para efecto visual
-    /*
+    /*hola
     document.getElementById('btnSimplex').addEventListener('click', function() {
         this.style.transform = 'scale(0.95)';
         setTimeout(() => {
